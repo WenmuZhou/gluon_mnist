@@ -73,6 +73,7 @@ if __name__ == '__main__':
         start = time.time()
         train_loss = 0.0
         train_acc = 0.0
+        cur_step = 0
         n = train_data.__len__()
         for i, (data, label) in enumerate(train_data_loader):
             label = label.astype('float32').as_in_context(ctx)
@@ -95,6 +96,7 @@ if __name__ == '__main__':
             sw.add_scalar(tag='Train/acc', value=cur_acc / label.shape[0], global_step=cur_step)
 
         val_acc = evaluate_accuracy(test_data_loader,net,ctx)
+        sw.add_scalar(tag='Eval/acc', value=val_acc, global_step=cur_step)
         print('epoch: %d, train_loss: %.4f, train_acc: %.4f,, val_acc: %.4f, time: %.4f' % (
             epoch + 1, train_loss / n, train_acc / n,val_acc, time.time() - start))
     sw.close()
