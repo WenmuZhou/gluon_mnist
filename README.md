@@ -1,6 +1,17 @@
-# crnn.gluon
-Convolutional Recurrent Neural Network in mxnet gluon interface
+# gluon_mnist
+learning gluon with mnist dataset
 
-Implementation of the Convolutional Recurrent Neural Network (CRNN) for image-based sequence recognition tasks, such as scene text recognition. Original [paper](http://arxiv.org/abs/1507.05717) and [code](https://github.com/bgshih/crnn)
+## training
 
-At present, this project is still in an unusable state
+```sh
+python3 train.py
+```
+
+## predict
+
+Need to modify the model and picture path in the code
+```sh
+python3 predict.py
+```
+
+the code Calculate 1000 times to average, if you only need to calculate once, comment it out in the code.
