@@ -15,3 +15,10 @@ python3 predict.py
 ```
 
 the code Calculate 1000 times to average, if you only need to calculate once, comment it out in the code.
+
+# requirement
+* mxnet
+* mxboard
+* time
+* cv2
+* numpy

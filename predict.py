@@ -4,7 +4,6 @@
 import time
 import mxnet as mx
 from mxnet.gluon.model_zoo import vision as models
-import matplotlib.pyplot as plt
 from mxnet import nd
 import cv2
 import os
