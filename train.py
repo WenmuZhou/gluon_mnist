@@ -37,15 +37,11 @@ if __name__ == '__main__':
     ctx = try_gpu(0)
     net = models.AlexNet(classes=10)
     net.hybridize()
-    net.initialize()
-    net.forward(nd.ones((1, 3, 227, 227)))
+    net.initialize(ctx=ctx, init=init.Xavier())
+    net.forward(nd.ones((1, 3, 227, 227)).as_in_context(ctx))
 
     sw = SummaryWriter('./log/%s' % (time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())))
     sw.add_graph(net)
-    # del net
-    net = models.AlexNet(classes=10)
-    net.hybridize()
-    net.initialize(ctx=ctx, init=init.Xavier())
 
     print('initialize weights on', ctx)
 
@@ -94,11 +90,12 @@ if __name__ == '__main__':
             cur_step = epoch * (n / batch_size) + i
             sw.add_scalar(tag='Train/loss', value=cur_loss / label.shape[0], global_step=cur_step)
             sw.add_scalar(tag='Train/acc', value=cur_acc / label.shape[0], global_step=cur_step)
+            sw.add_scalar(tag='Train/lr', value=trainer.learning_rate, global_step=cur_step)
 
         val_acc = evaluate_accuracy(test_data_loader,net,ctx)
         sw.add_scalar(tag='Eval/acc', value=val_acc, global_step=cur_step)
-        print('epoch: %d, train_loss: %.4f, train_acc: %.4f,, val_acc: %.4f, time: %.4f' % (
-            epoch + 1, train_loss / n, train_acc / n,val_acc, time.time() - start))
+        print('epoch: %d, train_loss: %.4f, train_acc: %.4f, val_acc: %.4f, time: %.4f, lr=%s' % (
+            epoch + 1, train_loss / n, train_acc / n,val_acc, time.time() - start,str(trainer.learning_rate)))
     sw.close()
     # net.save_params('models.AlexNet.params')
     # net.load_params()
