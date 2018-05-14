@@ -45,8 +45,6 @@ if __name__ == '__main__':
 
     print('initialize weights on', ctx)
 
-    loss = gluon.loss.SoftmaxCrossEntropyLoss()
-    trainer = gluon.Trainer(net.collect_params(), 'adam', {'learning_rate': 0.01})
     # 获取数据
     batch_size = 64
     epochs = 3
