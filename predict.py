@@ -7,6 +7,9 @@ from mxnet.gluon.model_zoo import vision as models
 from mxnet import nd
 import cv2
 import os
+from math import *
+from mxnet.gluon.data.vision import transforms
+
 
 
 def try_gpu(gpu):
@@ -24,7 +27,7 @@ class Gluon_Model:
         self.ctx = try_gpu(gpu_id)
         print(self.ctx)
         self.net = net
-        self.net.load_params(model_path, ctx=self.ctx)
+        self.net.load_parameters(model_path, ctx=self.ctx)
         self.net.hybridize()
         self.img_shape = img_shape
         self.img_channel = img_channel
@@ -45,40 +48,51 @@ class Gluon_Model:
             else:
                 return 'file is not exists'
 
-        img = cv2.resize(img, (self.img_shape[0], self.img_shape[1]))
         if len(img.shape) == 2 and self.img_channel == 3:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         elif len(img.shape) == 3 and self.img_channel == 1:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        img = img.reshape([self.img_shape[0], self.img_shape[1], self.img_channel])
-        img = img.transpose([2, 0, 1])
-        img = nd.array(img).expand_dims(axis=0)
-        img = img.as_in_context(self.ctx)
-        result = self.net(img)[0]
-        result = result.asnumpy().argmax()
+        tensor = cv2.resize(img, (self.img_shape[0], self.img_shape[1]))
+        tensor = tensor.reshape([self.img_shape[0], self.img_shape[1], self.img_channel])
+
+        tensor = transforms.ToTensor()(nd.array(tensor)).expand_dims(axis=0)
+        tensor = tensor.as_in_context(self.ctx)
+        result = self.net(tensor)[0]
+        label = result.asnumpy().argmax()
+        new_path = os.path.splitext(img_path)[0] + str(label) + "_rotate.png"
+        tic = time.time()
+        if label == 0:
+            cv2.imwrite(new_path, img)
+        elif label == 1:
+            img = img_rotate(270, img)
+            cv2.imwrite(new_path, img)
+        elif label == 2:
+            img = img_rotate(180, img)
+            cv2.imwrite(new_path, img)
+        elif label == 3:
+            img = img_rotate(90, img)
+            cv2.imwrite(new_path, img)
+        print(new_path, time.time() - tic)
         return result
 
+def img_rotate(degree, img):
+    height, width = img.shape[:2]
+    heightNew = int(width * fabs(sin(radians(degree))) + height * fabs(cos(radians(degree))))
+    widthNew = int(height * fabs(sin(radians(degree))) + width * fabs(cos(radians(degree))))
+    matRotation = cv2.getRotationMatrix2D((width / 2, height / 2), degree, 1)
+    matRotation[0, 2] += (widthNew - width) / 2
+    matRotation[1, 2] += (heightNew - height) / 2
+    imgRotation = cv2.warpAffine(img, matRotation, (widthNew, heightNew), borderValue=(255, 255, 255))
+    return imgRotation
 
 if __name__ == '__main__':
     img_path = '/data/datasets/mnist/train/0/0_1.png'
-    model_path = 'models.AlexNet.params'
+    model_path = 'models/resnet50/2_1.0.params'
 
-    model = Gluon_Model(models.AlexNet(classes=10), model_path, img_shape=[227, 227])
-    start_cpu = time.time()
-    epoch = 1000
-    for _ in range(epoch):
-        start = time.time()
-        result = model.predict(img_path)
-        print('device: cpu, result:%s, time: %.4f' % (str(result), time.time() - start))
-    end_cpu = time.time()
+    model1 = Gluon_Model(models.resnet50_v1(classes=4), model_path, gpu_id=0, img_shape=[224, 224])
 
-    model1 = Gluon_Model(models.AlexNet(classes=10), model_path, gpu_id=0, img_shape=[227, 227])
-    start_gpu = time.time()
-    for _ in range(epoch):
+    for img in os.listdir('/data2/zj/pingan/t_xz/input1'):
+        img_path = os.path.join('/data2/zj/pingan/t_xz/input1',img)
         start = time.time()
         result = model1.predict(img_path)
-        print('device: gpu, result:%s, time: %.4f' % (str(result), time.time() - start))
-    end_gpu = time.time()
-    print('cpu avg time: %.4f' % ((end_cpu - start_cpu) / epoch))
-    print('gpu avg time: %.4f' % ((end_gpu - start_gpu) / epoch))
